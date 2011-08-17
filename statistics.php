@@ -66,7 +66,7 @@ class NavieCluster extends Statistics{
 		}
 	}
 	private function FindQuery(){
-		$query = sprintf("select `query` from `%s`", $this->DB);
+		$query = sprintf("select distinct `query` from `%s` ", $this->DB);
 		$result = mysql_query($query) or die(mysql_error()."\nerror query\n".$query);		
 		$this->q = array();
 		while ($row = mysql_fetch_row($result)){
@@ -162,7 +162,7 @@ class Entropy extends Statistics{
 		}
 	}
 	private function FindQuery(){
-		$query = sprintf("select `query` from `%s`", $this->DB);
+		$query = sprintf("select distinct `query` from `%s` ", $this->DB);
 		$result = mysql_query($query) or die(mysql_error()."\nerror query\n".$query);		
 		$this->safe_q = array();
 		$this->unsafe_q = array();
@@ -174,18 +174,81 @@ class Entropy extends Statistics{
 		return $this->safe_q;
 	}
 	public function AverageInHour($t){
+		// it calculate the average entropy and the max in time t
+		$result = $this->_AverageInHour($t);
+		$ret["average"] = $result["average"];
+		$ret["max_set"] = $result["max_set"];
+		print_r($ret);
+		return $ret;
+	}
+	public function _AverageInHour($t){
+		// it calculate the average entropy and the max in time t
 		if ($this->safe_q == NULL){
 			$this->FindQuery();
 		}
+		$sum = 0.0;
+		$weight_sum = 0.0;
+		$max_set = null;
+		$max = 0.0;
 		foreach($this->safe_q as $i => $v){
 			$Q_URLs[$v] = $this->SpecificQ_URLsInHour($v, $t);
+			$sum += $Q_URLs[$v]["entropy"] * $Q_URLs[$v]["click"];
+			$weight_sum += $Q_URLs[$v]["click"];
+			if ($max < $Q_URLs[$v]["entropy"]) {
+				$max_set = array(); // clear
+				$max_set[$v] = $Q_URLs[$v];
+				$max = $Q_URLs[$v]["entropy"];
+			}else if ($max == $Q_URLs[$v]["entropy"]){
+				$max_set[$v] = $Q_URLs[$v]; // add more
+			}
 		}
-		print_r($Q_URLs);
-		return $Q_URLs[$v];
+		$ret["Q_URLs"] = $Q_URLs;
+		$ret["average"] = $sum / $weight_sum;
+		$ret["max_set"] = $max_set;
+		$ret["sum"] = $sum;
+		$ret["weight_sum"] = $weight_sum;
+		//echo $ret["average"];
+		//print_r($ret);
+		return $ret;
+	}
+	public function AverageInDay(){
+		// it calculate the average entropy and the max in a day
+		if ($this->safe_q == NULL){
+			$this->FindQuery();
+		}
+		$sum = 0.0;
+		$weight_sum = 0.0;
+		$max_set = null;
+		$max = 0.0;
+		for ($t = 0; $t < 24;$t++){
+			$result = $this->_AverageInHour($t);
+			//$max_set[$t] = $result["max_set"];
+			$sum += $result["sum"];
+			$weight_sum += $result["weight_sum"];
+			echo $t."\n";
+			print_r($result["max_set"]);
+			foreach ($result["max_set"] as $i => $v){
+				if ($max < $result["max_set"][$i]["entropy"]) {
+					$max_set = array(); // clear
+					$max_set[$t] = $result["max_set"];
+					$max = $result["max_set"][$i]["entropy"];
+				}else if ($max == $result["max_set"][$i]["entropy"]){
+					$max_set[$t] = $result["max_set"]; // add more
+				}
+				break;
+			}
+		}
+		//print_r($Q_URLs);
+		$ret["average"] = $sum / $weight_sum;
+		$ret["max_set"] = $max_set;
+		//echo $ret["average"];
+		print_r($ret);
+		return $ret;
+
 	}
 	public function SpecificQ_URLsInHour($q, $t){
 		// measure the entropy of Query q => URls in time t
-		// 
+		// it will return the entropy of the $q and the total click caused by $q
 		// in bound
 		$query = sprintf("
 			select `url`, `%d` from `%s` where `query` = '%s' and `%d` >= %d
@@ -193,7 +256,7 @@ class Entropy extends Statistics{
 		$result = mysql_query($query) or die(mysql_error()."\nerror query\n".$query);
 		$num = mysql_num_rows($result);
 		if ($num == 0){
-			echo "no result for ".$q." in ".$t." under lower bound =".$this->lb."\n";
+			//echo "no result for ".$q." in ".$t." under lower bound =".$this->lb."\n";
 			return 0.0;
 		}
 
@@ -225,7 +288,11 @@ class Entropy extends Statistics{
 				$entropy -= $p * log($p);
 			}
 		}
-		return $entropy;
+
+		$ret["entropy"] = $entropy;
+		$ret["click"] = $sum;
+
+		return $ret;
 	}
 }
 

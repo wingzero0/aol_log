@@ -19,6 +19,7 @@ $para = ParameterParser($argc, $argv);
 //$f->ClusterUrlPairs();
 //$f->displaySimilar();
 $e = new Entropy($para);
-$e->AverageInHour(0);
+//$e->AverageInHour(0);
+$e->AverageInDay();
 
 ?>

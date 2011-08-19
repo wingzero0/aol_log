@@ -211,6 +211,48 @@ class Entropy extends Statistics{
 		//print_r($ret);
 		return $ret;
 	}
+	public function DistributionInHour($t){
+		// it calculate the distribution of entropy and the max in time t
+		// it will replace the function _AverageInHour in the future
+		if ($this->safe_q == NULL){
+			$this->FindQuery();
+		}
+		$sum = 0.0;
+		$weight_sum = 0.0;
+		$max_set = null;
+		$max = 0.0;
+		$distribution = array();
+		foreach($this->safe_q as $i => $v){
+			$Q_URLs[$v] = $this->SpecificQ_URLsInHour($v, $t);
+			$sum += $Q_URLs[$v]["entropy"] * $Q_URLs[$v]["click"];
+			$weight_sum += $Q_URLs[$v]["click"];
+			if ($max < $Q_URLs[$v]["entropy"]) {
+				$max_set = array(); // clear
+				$max_set[$v] = $Q_URLs[$v];
+				$max = $Q_URLs[$v]["entropy"];
+			}else if ($max == $Q_URLs[$v]["entropy"]){
+				$max_set[$v] = $Q_URLs[$v]; // add more
+			}
+			$string_entropy = sprintf("%.2lf", $Q_URLs[$v]["entropy"]);
+			if (!isset($distribution[$string_entropy])){
+				$distribution[$string_entropy]["prob"] = 0.0;
+			}
+			$distribution[$string_entropy]["prob"] += $Q_URLs[$v]["click"];
+			$distribution[$string_entropy]["Q_URLs"][$v] = $Q_URLs[$v];
+		}
+		foreach($distribution as $i => $v){
+			$distribution[$i]["prob"] /= $weight_sum;
+		}
+		ksort($distribution);
+		$ret["distribution"] = $distribution;
+		//print_r($distribution);
+		$ret["Q_URLs"] = $Q_URLs;
+		$ret["average"] = $sum / $weight_sum;
+		$ret["max_set"] = $max_set;
+		$ret["sum"] = $sum;
+		$ret["weight_sum"] = $weight_sum;
+		return $ret;
+	}
 	public function AverageInDay(){
 		// it calculate the average entropy and the max in a day
 		if ($this->safe_q == NULL){
@@ -254,11 +296,12 @@ class Entropy extends Statistics{
 			select `url`, `%d` from `%s` where `query` = '%s' and `%d` >= %d
 			", $t, $this->DB, $q , $t , $this->lb );
 		$result = mysql_query($query) or die(mysql_error()."\nerror query\n".$query);
+		/*
 		$num = mysql_num_rows($result);
 		if ($num == 0){
 			//echo "no result for ".$q." in ".$t." under lower bound =".$this->lb."\n";
 			return 0.0;
-		}
+		}*/
 
 		$sum = 0.0;
 		while($row = mysql_fetch_row($result)){

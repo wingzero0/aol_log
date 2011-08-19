@@ -19,7 +19,33 @@ $para = ParameterParser($argc, $argv);
 //$f->ClusterUrlPairs();
 //$f->displaySimilar();
 $e = new Entropy($para);
-//$e->AverageInHour(0);
-$e->AverageInDay();
-
+for ($t = 0;$t<24;$t++){
+	$stdout_flag = false;
+	if (isset($para["o"])){
+		$fp = fopen($para["o"].".".$t.".csv", "w");
+	}else{
+		$fp = NULL;
+	}
+	if ($fp == NULL){
+		printf("the output will print to the stdout\n");
+		$stdout_flag = true;
+		$fp = STDOUT;
+	}
+	$ret = $e->DistributionInHour($t);
+	for ($i = 0.00; $i< 3.00; $i += 0.01){
+		$string_entropy = sprintf("%.2f", $i);
+		if (!isset($ret["distribution"][$string_entropy])){
+			fprintf($fp, "%s\t%lf\n", $string_entropy, 0);
+		}else{
+			fprintf($fp, "%s\t%lf\n", $string_entropy, $ret["distribution"][$string_entropy]["prob"]);	
+		}
+	}
+	/*
+	foreach($ret["distribution"] as $i => $v){
+		printf("%s\t%lf\n", $i, $v["prob"]);
+	}*/
+	if ($stdout_flag == false){
+		fclose($fp);
+	}
+}
 ?>

@@ -21,6 +21,7 @@ $para = ParameterParser($argc, $argv);
 $e = new Entropy($para);
 
 // nonspecific query entropy in day ------------------------------------------
+/*
 $stdout_flag = false;
 if (isset($para["o"])){
 	$fp = fopen($para["o"].".csv", "w");
@@ -45,6 +46,7 @@ for ($i = 0.00; $i< 3.00; $i += 0.01){
 if ($stdout_flag == false){
 	fclose($fp);
 }
+ */
 // ------------------------------------------
 
 // entropy in day ------------------------------------------
@@ -67,6 +69,7 @@ for ($i = 0.00; $i< 3.00; $i += 0.01){
 		fprintf($fp, "%s\t%lf\n", $string_entropy, 0);
 	}else{
 		fprintf($fp, "%s\t%lf\n", $string_entropy, $ret["distribution"][$string_entropy]["prob"]);	
+		print_r($ret["distribution"][$string_entropy]);
 	}
 }
 if ($stdout_flag == false){
@@ -76,33 +79,43 @@ if ($stdout_flag == false){
 // ------------------------------------------
 
 
-/*
+
 // entropy in hour ------------------------------------------
 for ($t = 0;$t<24;$t++){
 	$stdout_flag = false;
 	if (isset($para["o"])){
 		$fp = fopen($para["o"].".".$t.".csv", "w");
+		$fp2 = fopen($para["o"].".".$t.".instance.csv", "w");
 	}else{
 		$fp = NULL;
+		$fp2 = NULL;
 	}
 	if ($fp == NULL){
 		printf("the output will print to the stdout\n");
 		$stdout_flag = true;
 		$fp = STDOUT;
+		$fp2 = STDOUT;
 	}
 	$ret = $e->DistributionInHour($t);
+	printf("time = %d\n",$t);
 	for ($i = 0.00; $i< 3.00; $i += 0.01){
 		$string_entropy = sprintf("%.2f", $i);
 		if (!isset($ret["distribution"][$string_entropy])){
 			fprintf($fp, "%s\t%lf\n", $string_entropy, 0);
 		}else{
 			fprintf($fp, "%s\t%lf\n", $string_entropy, $ret["distribution"][$string_entropy]["prob"]);	
+			fprintf($fp2, "entropy about %s\n", $string_entropy);
+			$value = $ret["distribution"][$string_entropy];
+			fprintf($fp2, "\tclick = %d\n",$value["click"]);
+			foreach ($value["Q_URLs"] as $index => $subvalue){
+				fprintf($fp2, "\t%s\n",$index);
+			}
 		}
 	}
 	if ($stdout_flag == false){
 		fclose($fp);
+		fclose($fp2);
 	}
 }
 // ------------------------------------------
-*/
 ?>

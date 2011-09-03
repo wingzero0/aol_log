@@ -15,6 +15,8 @@ class Statistics{
 	public $lb = -1;
 	public $up = -1;
 	public $DB = NULL;
+	public $safe_q = NULL;
+	public $unsafe_q = NULL;
 	public function __construct($para){
 		if (isset($para["TB"])){
 			$this->DB = $para["TB"];
@@ -51,6 +53,18 @@ class Statistics{
 		$num = mysql_num_rows($result);
 		return $num;
 	}
+	public function FindQuery(){
+		$query = sprintf("select distinct `query` from `%s` ", $this->DB);
+		$result = mysql_query($query) or die(mysql_error()."\nerror query\n".$query);		
+		$this->safe_q = array();
+		$this->unsafe_q = array();
+
+		while ($row = mysql_fetch_row($result)){
+			$this->safe_q[] = preg_replace("/\'/", "\\\'", $row[0]);
+			$this->unsafe_q[] = $row[0];
+		}
+		return $this->safe_q;
+	}
 }
 
 class NavieCluster extends Statistics{
@@ -65,7 +79,7 @@ class NavieCluster extends Statistics{
 			$this->Threshold = intval($para["Threshold"]);
 		}
 	}
-	private function FindQuery(){
+	public function FindQuery(){
 		$query = sprintf("select distinct `query` from `%s` ", $this->DB);
 		$result = mysql_query($query) or die(mysql_error()."\nerror query\n".$query);		
 		$this->q = array();
@@ -153,15 +167,15 @@ class Entropy extends Statistics{
 	private $query_weight = array();
 	private $url_weight = array();
 	private $query_url_weight = array();
-	private $safe_q = null;
-	private $unsafe_q = null;
+	//private $safe_q = null;
+	//private $unsafe_q = null;
 	public function __construct($para){
 		parent::__construct($para);
 		if (!isset($para["low"])){
 			$this->lb = 1;
 		}
 	}
-	private function FindQuery(){
+	public function FindQuery(){
 		$query = sprintf("select distinct `query` from `%s` ", $this->DB);
 		$result = mysql_query($query) or die(mysql_error()."\nerror query\n".$query);		
 		$this->safe_q = array();

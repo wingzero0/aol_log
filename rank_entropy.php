@@ -40,7 +40,7 @@ class RankEntropy extends Statistics{
 		// implement notes: there are two part in this function,
 		// the first one operate in column, the second one operate in row.		
 		
-		$this->createDBTable();
+		//$this->createDBTable();
 		for ($t = 0;$t < 24;$t++){
 			$clicks = array(); // clear
 			foreach($urls as $i => $u){
@@ -175,9 +175,9 @@ class RankEntropy extends Statistics{
 		return;
 	}
 	
-	private function CreateDBTable() {
+	public function CreateDBTable() {
 		$sql = sprintf("
-			CREATE  TABLE IF NOT EXISTS `b95119`.`%s.rank` (
+			CREATE  TABLE IF NOT EXISTS `%s.rank` (
 				`id` int( 11  )  NOT  NULL  AUTO_INCREMENT ,
 				`query` varchar( 128  )  COLLATE utf8_unicode_ci NOT  NULL ,
 				`url` varchar( 255  )  COLLATE utf8_unicode_ci NOT  NULL ,
@@ -210,6 +210,10 @@ class RankEntropy extends Statistics{
 				KEY  `Url` (  `url`  )  ) ENGINE  =  MyISAM  DEFAULT CHARSET  = utf8 COLLATE  = utf8_unicode_ci;
 		", $this->DB);
 		$result = mysql_query($sql) or die(mysql_error()."\nerror query\n".$sql);
+		//echo $sql;
+		$sql = sprintf("TRUNCATE TABLE `%s.rank`",$this->DB);
+		$result = mysql_query($sql) or die(mysql_error()."\nerror query\n".$sql);
+		
 		return;
 	}	
 	private function select_time_click($t,$q,$u){
@@ -262,17 +266,76 @@ class RankEntropy extends Statistics{
 			return $entropy;
 		}
 	}
+	public static function TopK($argc, $argv){
+		$para = ParameterParser($argc, $argv);
+		$re = new RankEntropy($para);
+		$querys = $re->FindQuery();
+		
+		$re->createDBTable(); //init DB table
+		foreach ($querys as $i => $q){ 
+			$urls = $re->select_candidate_urls($q);
+			//echo $q."\t";
+			//print_r($urls);
+			$u_inverted = $re->rank_cross_time($q, $urls);
+			//print_r($u_inverted);
+		}
+		
+		// get all value;
+		foreach ($querys as $i => $q){ 
+			$entropy[$q] = $re->getEntropy($q);
+			/*
+			if ($entropy["global_max_value"] < $entropy[$q]["max_value"]){
+				$entropy["global_max_url"] = $q."\t".$entropy[$q]["max_u"];
+				$entropy["global_max_value"] = $entropy[$q]["max_value"];
+			}*/
+			
+			$max_value[] = $entropy[$q]["max_value"];
+			$avg_value[] = $entropy[$q]["average"];
+		}
+		rsort($max_value);
+		rsort($avg_value);
+		$num = intval($para["topk"]);
+		if ( $num <= count($max_value) ){
+			// select the lower score in top k
+			$l_max_value = $max_value[$num - 1];
+			$l_avg_value = $avg_value[$num - 1];
+		}else{
+			$l_max_value = $max_value[$count($max_value)];
+			$l_avg_value = $avg_value[$count($avg_value)];
+		}
+		
+		foreach ($entropy as $q => $e){ 
+			if ( $e["max_value"] >= $l_max_value ){
+				$output_max[$q] = $e;
+			}
+			if ( $e["average"] >= $l_avg_value ){
+				$output_avg[$q] = $e;
+			}
+		}
+		
+		printf("select from max(count = %d, select = %d)\n", count($output_max), $num);
+		foreach ($output_max as $q => $e){ 
+			echo $q."\t".$e["max_value"]."\n";
+		}
+		//print_r($output_max);
+		printf("\nselect from avg(count = %d, select = %d)\n", count($output_avg), $num);
+		foreach ($output_avg as $q => $e){ 
+			echo $q."\t".$e["average"]."\n";
+		}
+		//print_r($output_avg);
+	}
 	public static function test($argc, $argv){
 		$para = ParameterParser($argc, $argv);
 		$re = new RankEntropy($para);
 		$querys = $re->FindQuery();
-		/*foreach ($querys as $i => $q){ 
+		foreach ($querys as $i => $q){ 
 			$urls = $re->select_candidate_urls($q);
 			echo $q."\t";
 			//print_r($urls);
 			$u_inverted = $re->rank_cross_time($q, $urls);
-			print_r($u_inverted);
-		}*/
+			//print_r($u_inverted);
+		}
+		/*
 		$entropy["global_max_value"] = 0.0;
 		$entropy["global_max_url"] = NULL;
 		foreach ($querys as $i => $q){ 
@@ -282,9 +345,9 @@ class RankEntropy extends Statistics{
 				$entropy["global_max_value"] = $entropy[$q]["max_value"];
 			}
 		}
-		print_r($entropy);
+		print_r($entropy);*/
 	} 
 }
 
-RankEntropy::test($argc, $argv);
+RankEntropy::TopK($argc, $argv);
 ?>

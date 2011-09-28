@@ -1,9 +1,23 @@
 <?php
+/* this program what to calcuate the query 's rank entropy
+ * we define the rank entropy of a (q,u) pair as follow:
+ * 	if url rank at position i for q with t hours, 
+ * 	then the prob of it be ranked in i is t/24.
+ * 	so we can calculate each ranked prob.
+ *    finally, the rank entropy is the sum of sum i prob() 
+ *
+ *
+ * if the url ranking in the query will change over day, it entropy will be large
+ */
 include("statistics.php");
 mysql_select_db($database_cnn,$b95119_cnn);
 
 class RankEntropy extends Statistics{
+	public $topk = 10;
 	public function __construct($para){
+		if (isset($para["topk"])){
+			$this->topk = intval($para["topk"]);
+		}
 		parent::__construct($para);
 	}
 	public function select_candidate_urls($q){
@@ -275,7 +289,9 @@ class RankEntropy extends Statistics{
 		foreach ($querys as $i => $q){ 
 			$urls = $re->select_candidate_urls($q);
 			//echo $q."\t";
-			//print_r($urls);
+			if (count($urls) <= 1 ){
+				continue;
+			}
 			$u_inverted = $re->rank_cross_time($q, $urls);
 			//print_r($u_inverted);
 		}
@@ -294,7 +310,7 @@ class RankEntropy extends Statistics{
 		}
 		rsort($max_value);
 		rsort($avg_value);
-		$num = intval($para["topk"]);
+		$num = $re->topk;
 		if ( $num <= count($max_value) ){
 			// select the lower score in top k
 			$l_max_value = $max_value[$num - 1];

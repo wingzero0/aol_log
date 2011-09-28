@@ -107,7 +107,7 @@ function insert_new_db($para, $cnn, $click){
 			$result = mysql_query($sql) or die($sql."\n".mysql_error());
 			if (mysql_num_rows($result) > 0){
 				//update the old record
-				$row = mysql_fetch_array($result);
+				$row = mysql_fetch_row($result);
 				for ($t = 0;$t<24;$t++){
 					$type[$t] += $row[$t+3];
 				}

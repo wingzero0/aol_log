@@ -61,7 +61,7 @@ class aol_itemrank extends aol_utility {
 		arsort($this->ranking_list[$s_q]);
 		return array_keys($this->ranking_list[$s_q]);
 	}
-	private function switch_db($num){
+	protected function switch_db($num){
 		$database_cnn = $this->dbs[$num];
 		mysql_select_db($database_cnn);
 	}
@@ -125,9 +125,24 @@ class aol_itemrank extends aol_utility {
 			echo $s_q."\n";
 			fprintf($obj->output_fp, "%s\n", $s_q);
 			//print_r($ranking);
+			$obj->switch_db(1);
 			foreach ($ranking as $j => $url){
-				fprintf($obj->output_fp, "%d\t%s\n", $j, $url);
+				$uid = $obj->getUID($url);
+				fprintf($obj->output_fp, "%d\t%s\t%d\n", $j, $url, $uid);
 			}
+		}
+	}
+	public function getUID($s_url){
+		$sql = sprintf("select `uid` from `uid_clean` where `url` = '%s'", 
+			$s_url);
+		$result = mysql_query($sql) or die(mysql_error()."\nerror query\n".$sql);
+		$num = mysql_num_rows($result);
+		if ($num <= 0 ){
+			return 0; // not match
+		}else if ($row = mysql_fetch_row($result)){
+			return intval($row[0]);
+		}else{
+			return -1; // error
 		}
 	}
 }

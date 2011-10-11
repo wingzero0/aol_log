@@ -1,4 +1,11 @@
 <?php
+// This program read the input query and select the corresponding urls. 
+// The urls are the 10 highest freqs for the query in AOL.
+// Then, it will output a ranking list.
+// You can specify a parameter "-html_content content_path". 
+// It will check the urls whether they are in the content_path or not
+// If the file exists, it will be copied to content_path_output (auto generate)
+// If not, it will generate a stderr message to notify the user.
 include_once("aol_utility.php");
 
 class aol_itemrank extends aol_utility {
@@ -6,7 +13,10 @@ class aol_itemrank extends aol_utility {
 	private $dbs;
 	private $s_querys;
 	private $targetTB;
+	private $html_path;
 	public function __construct($para){
+		// if html_path (-html_content) attribute is null,
+		// the object will not check whether the URL content exists when it output UID 
 		$this->dbs[0] = "cikm2011";
 		$this->dbs[1] = "b95119";
 		if ( isset($para["file"]) ){
@@ -21,8 +31,15 @@ class aol_itemrank extends aol_utility {
 			fprintf(STDERR,"please specify the target table with option \"-TB\"\n");
 			exit(-1);
 		}
+		if ( isset($para["html_content"]) ){
+			$this->html_path = $para["html_content"];
+		}else{
+			$this->html_path = null;
+			//exit(-1);
+		}
 		$this->s_querys = array();
 		parent::__construct($para);
+		
 	}
 	
 	private function q_u_average_itemrank($s_query, $s_url){
@@ -113,9 +130,25 @@ class aol_itemrank extends aol_utility {
 		fclose($fp);
 		return $this->s_querys;
 	}
+	protected function CheckHtmlContent($url, $uid){
+		if ($this->html_path == null){
+			return true;// skip the checking
+		}
+		system("mkdir ".$this->html_path."_selected");
+		$ret = system("ls ".$this->html_path."/".$uid);
+		if (empty($ret)){
+			//fprintf($this->err_fp, $url."\t".$uid."\tnot found\n");
+			fprintf($this->err_fp, $url."\t".$uid."\n");
+			return false;
+		}else{
+			system("cp ".$this->html_path."/".$uid." ".$this->html_path."_selected/");
+		}
+		return true;
+	}
 	public static function GetAolItemRank($argc, $argv){
 		// sample command
-		// php aol_utility.php -TB aol_24_clean -file input.txt
+		// php aol_itemrank.php -TB aol_24_clean -file input.txt 
+		// -o ItemrankWithUID.txt -err UncatchURL.txt
 		$para = ParameterParser($argc, $argv);
 		$obj = new aol_itemrank($para);
 		$s_querys = $obj->GetQueryFromFile();
@@ -128,6 +161,7 @@ class aol_itemrank extends aol_utility {
 			$obj->switch_db(1);
 			foreach ($ranking as $j => $url){
 				$uid = $obj->getUID($url);
+				$obj->CheckHtmlContent($url, $uid);
 				fprintf($obj->output_fp, "%d\t%s\t%d\n", $j, $url, $uid);
 			}
 		}

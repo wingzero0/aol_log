@@ -56,7 +56,19 @@ public class SenseTrainerTfidf {
 		}
 		return 0; 
 	}
+	public String[] getAllSenseName(){
+		String[] names = new String[this.corpus_path.size()];
+		for (int i = 0;i< this.corpus_path.size();i++){
+			names[i] = this.getSenseName(i);
+		}
+		return names;
+	}
+	public String getSenseName(int ith_path){
+		File classDir = new File(this.corpus_path.get(ith_path));
+		return classDir.getName();
+	}
 	public String CreateBigStr(int ith_path){
+		// each class just use it's first 100 document to make the trainning content
 		StringBuffer BigStr = new StringBuffer();
 		File classDir = new File(this.corpus_path.get(ith_path));
 		if (!classDir.isDirectory()) {
@@ -67,7 +79,11 @@ public class SenseTrainerTfidf {
 		}
 		
 		String[] trainingFiles = classDir.list();
-		for (int j = 0; j < trainingFiles.length; ++j) {
+		int max_file = 100;
+		if (max_file > trainingFiles.length){
+			max_file = trainingFiles.length;
+		}
+		for (int j = 0; j < max_file; ++j) {
 			File file = new File(classDir, trainingFiles[j]);
 			
 			String text = new String();

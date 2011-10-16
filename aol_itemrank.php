@@ -147,8 +147,8 @@ class aol_itemrank extends aol_utility {
 	}
 	public static function GetAolItemRank($argc, $argv){
 		// sample command
-		// php aol_itemrank.php -TB aol_24_clean -file input.txt 
-		// -o ItemrankWithUID.txt -err UncatchURL.txt
+		// php aol_itemrank.php -TB aol_24_clean -file query.txt 
+		// -o ItemrankWithUID.txt -err UncatchURL.txt -html_content uid_clean
 		$para = ParameterParser($argc, $argv);
 		$obj = new aol_itemrank($para);
 		$s_querys = $obj->GetQueryFromFile();
@@ -156,13 +156,14 @@ class aol_itemrank extends aol_utility {
 		foreach ($s_querys as $i => $s_q){
 			$ranking = $obj->GetQueryAllItemRank($s_q);
 			echo $s_q."\n";
-			fprintf($obj->output_fp, "%s\n", $s_q);
+			//fprintf($obj->output_fp, "%s\n", $s_q);
 			//print_r($ranking);
 			$obj->switch_db(1);
 			foreach ($ranking as $j => $url){
 				$uid = $obj->getUID($url);
 				$obj->CheckHtmlContent($url, $uid);
-				fprintf($obj->output_fp, "%d\t%s\t%d\n", $j, $url, $uid);
+				//fprintf($obj->output_fp, "%d\t%s\t%d\n", $j, $url, $uid);
+				fprintf($obj->output_fp, "%s\t%d\t%s\n", $s_q,$j, $url);
 			}
 		}
 	}

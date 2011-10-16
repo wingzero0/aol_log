@@ -20,6 +20,8 @@ class aol_rerank extends aol_utility {
 	protected $sim_fp = null;
 	protected $traffice_fp = null;
 	protected $itemarnk = array();
+	protected $merge_rank = array();
+	protected $merge_score = array();
 	protected $sim = array();
 	protected $traffic = array();
 	protected $sense_score = array();
@@ -112,7 +114,11 @@ class aol_rerank extends aol_utility {
 		
 		// compute new rank
 		foreach ($this->itemrank[$q] as $u => $r){
-			$sum = 0.0;			
+			$sum = 0.0;
+			if (!isset($this->sim[$u])){
+				//skip the url the we haven't crawl the ram content
+				continue;
+			}			
 			foreach ($this->traffic as $sense => $v){
 				//echo "$u-$sense-\n";
 				$sum += $v * $this->sim[$u][$sense];
@@ -131,6 +137,10 @@ class aol_rerank extends aol_utility {
 		$this->merge_score[$q] = array();
 		$this->merge_rank[$q] = array();
 		foreach ($this->itemrank[$q] as $u => $r){
+			if (!isset($this->sim[$u])){
+				//skip the url the we haven't crawl the ram content
+				continue;
+			}
 			$r_s = $this->sense_rank[$q][$u];
 			$score = $this->alpha * 1.0/ (double) $r_s + 
 				(1- $this->alpha) * 1.0 / (double) $r;
@@ -157,7 +167,12 @@ class aol_rerank extends aol_utility {
 		foreach ($querys as $q){
 			$obj->query_rerank($q);
 		}
-		print_r($obj->merge_rank);
+		foreach ($obj->merge_rank as $q => $ranking){
+			foreach ($ranking as $u => $rank){
+				fprintf($obj->output_fp, "%s\t%d\t%s\n", $q, $rank, $u);
+			}
+		}
+		//print_r($obj->merge_rank);
 	}
 }
 aol_rerank::AolRerank($argc,$argv);

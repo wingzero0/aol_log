@@ -89,6 +89,45 @@ class aol_tf_to_rerank extends aol_format_reduction {
 		$this->readinput();
 	}
 }
+
+class traffic_csv_to_rerank extends aol_format_reduction {
+	public $traffic = array();
+	protected $sum ;
+	public function readinput(){
+		$this->sum = 0;
+		while (!feof($this->infp)){
+			$line = fgets($this->infp); // first line is the column summery
+			if (empty($line)){
+				continue;
+			}
+			$list = preg_split("/ |\n/", $line);
+			$pattern = "/\"class(.*)\"/";
+
+			$sense = preg_replace($pattern, "\${1}_parsed", $list[0]);
+
+			$this->traffic[$sense] = doubleval($list[1]);
+			$this->sum += doubleval($list[1]);
+		}
+		print_r($this->traffic);
+	}
+	protected function calc_prob_and_output() {
+		foreach ($this->traffic as $s => $v){
+			$this->traffic[$s] /= $this->sum;
+			if ($this->traffic[$s] != 0.0){
+				fprintf($this->output_fp, "%s\t%lf\n", $s, $this->traffic[$s]);
+			}
+		}
+		//print_r($this->traffic);
+	}
+	protected function writeoutput(){
+		
+	}
+	public function Reduction() {
+		$this->readinput();
+		$this->calc_prob_and_output();
+	}
+}
 $para = ParameterParser($argc, $argv);
-$obj = new aol_tf_to_rerank($para);
+//$obj = new aol_tf_to_rerank($para);
+$obj = new traffic_csv_to_rerank($para);
 $obj->Reduction();

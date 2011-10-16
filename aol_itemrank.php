@@ -78,6 +78,7 @@ class aol_itemrank extends aol_utility {
 		arsort($this->ranking_list[$s_q]);
 		return array_keys($this->ranking_list[$s_q]);
 	}
+	
 	protected function switch_db($num){
 		$database_cnn = $this->dbs[$num];
 		mysql_select_db($database_cnn);
@@ -163,7 +164,7 @@ class aol_itemrank extends aol_utility {
 				$uid = $obj->getUID($url);
 				$obj->CheckHtmlContent($url, $uid);
 				//fprintf($obj->output_fp, "%d\t%s\t%d\n", $j, $url, $uid);
-				fprintf($obj->output_fp, "%s\t%d\t%s\n", $s_q,$j, $url);
+				fprintf($obj->output_fp, "%s\t%d\t%s\n", $s_q,$j+1, $url);
 			}
 		}
 	}

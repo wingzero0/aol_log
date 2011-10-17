@@ -6,7 +6,8 @@
 
 // The following is the format of the itemrank file.
 //
-// query \t rank \t url \n
+// query \t url \t score \n
+// the higher score, the higher rank.
 // 
 // the format of sense traffic
 // sense_name \t prob \n
@@ -20,6 +21,7 @@ class aol_rerank extends aol_utility {
 	protected $sim_fp = null;
 	protected $traffice_fp = null;
 	protected $itemarnk = array();
+	protected $itemarnk_score = array();
 	protected $merge_rank = array();
 	protected $merge_score = array();
 	protected $sim = array();
@@ -71,9 +73,21 @@ class aol_rerank extends aol_utility {
 			$list = preg_split("/\t|\n/", $line);
 			$q = $list[0];
 			//$u = preg_quote($list[2]);
-			$u = $list[2];
-			$rank = $list[1]; 
-			$this->itemrank[$q][$u] = intval($rank);
+			$u = $list[1];
+			$rank_score = $list[2]; 
+			$this->itemrank_score[$q][$u] = doubleval($rank_score);
+		}
+		foreach ($this->itemrank_score as $q => $ranking){
+			arsort($this->itemrank_score[$q]);
+			$rank = 1;
+			foreach($this->itemrank_score[$q] as $u => $score){
+				$this->itemrank[$q][$u] = $rank;
+				$rank++;
+			}
+			//echo $q."\n";
+			//print_r($this->itemrank_score[$q]);
+			//print_r($this->itemrank[$q]);
+			// we have an assumption that the itemrank score never tie. 
 		}
 		fclose($this->item_fp);
 		
@@ -83,8 +97,6 @@ class aol_rerank extends aol_utility {
 				continue;
 			}
 			$list = preg_split("/\t|\n/", $line);
-			//$list = split("\t", $line);
-			//$u = preg_quote($list[0]);//
 			$u = $list[0];
 			$sense = $list[1];
 			$score = $list[2]; 
@@ -132,6 +144,10 @@ class aol_rerank extends aol_utility {
 			$this->sense_rank[$q][$u] = $rank;
 			$rank++;
 		}
+		//echo $q."\n";
+		//print_r($this->sense_score[$q]);
+		//print_r($this->sense_rank[$q]);
+		// we have another assumption that the sense score never tie. 
 	}
 	private function query_merge($q){
 		$this->merge_score[$q] = array();
@@ -167,9 +183,15 @@ class aol_rerank extends aol_utility {
 		foreach ($querys as $q){
 			$obj->query_rerank($q);
 		}
+		/*
 		foreach ($obj->merge_rank as $q => $ranking){
 			foreach ($ranking as $u => $rank){
 				fprintf($obj->output_fp, "%s\t%d\t%s\n", $q, $rank, $u);
+			}
+		}*/
+		foreach ($obj->merge_score as $q => $ranking){
+			foreach ($ranking as $u => $score){
+				fprintf($obj->output_fp, "%s\t%s\t%lf\n", $q, $u, $score);
 			}
 		}
 		//print_r($obj->merge_rank);

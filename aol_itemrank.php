@@ -64,7 +64,7 @@ class aol_itemrank extends ranking {
 		foreach ($s_urls as $i => $s_u){
 			$this->ranking_list[$s_q][$s_u] = $this->q_u_average_itemrank($s_q, $s_u);
 		}
-		arsort($this->ranking_list[$s_q]);
+		asort($this->ranking_list[$s_q]);
 		// I need to keep the average score
 		//print_r($this->ranking_list[$s_q]);
 		return $this->ranking_list[$s_q];
@@ -109,7 +109,7 @@ class aol_itemrank extends ranking {
 	}
 	public static function GetAolItemRank($argc, $argv){
 		// sample command
-		// php aol_itemrank.php -TB aol_24_clean -file query.txt 
+		// php aol_itemrank.php -TB aol_24_clean -query_file query.txt 
 		// -o ItemrankWithUID.txt -err UncatchURL.txt -html_content uid_clean
 		$para = ParameterParser($argc, $argv);
 		$obj = new aol_itemrank($para);
@@ -122,7 +122,7 @@ class aol_itemrank extends ranking {
 			foreach ($ranking as $url => $avg_r){
 				$uid = $obj->getUID($url);
 				$obj->CheckHtmlContent($url, $uid);
-				fprintf($obj->output_fp, "%s\t%s\t%lf\n", $s_q,$url, $avg_r);
+				fprintf($obj->output_fp, "%s\t%s\t-%lf\n", $s_q,$url, $avg_r);
 			}
 		}
 	}

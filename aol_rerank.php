@@ -17,6 +17,7 @@
  
 include_once("aol_utility.php");
 class aol_rerank extends aol_utility {
+	// this class will use all sense to compute the new rank 
 	protected $item_fp = null;
 	protected $sim_fp = null;
 	protected $traffice_fp = null;
@@ -27,10 +28,10 @@ class aol_rerank extends aol_utility {
 	protected $sim = array();
 	protected $traffic = array();
 	protected $sense_score = array();
+	protected $sense_rank = array();
 	protected $alpha = 1.0;
 	protected $output_prefix = null;
 	protected $output_a = null;
-	protected $dump_fp = null;
 	public function __construct($para){
 		if ( isset($para["itemrank"]) ){
 			$this->item_fp = fopen($para["itemrank"], "r");
@@ -76,28 +77,12 @@ class aol_rerank extends aol_utility {
 			fprintf(STDERR,"please specify the output prefix with option \"-o\"\n");
 			exit(-1);
 		}
-		if ( isset($para["dump"]) ){
-			for ($a = 0.0;$a <= 1.0;$a+=0.1){
-				$index = sprintf("%.1lf", $a); // if use double as the array index, it will get an error 
-				$this->dump_fp[$index] = fopen($para["dump"].".".$index.".txt", "w");
-				if ($this->dump_fp[$index] == NULL){
-					fprintf(STDERR,$para["dump"].".".$index." can't be open\n");
-					exit(-1);
-				}
-			}
-		}
 		$this->ReadingInput();
 		parent::__construct($para);
 
 	}
 
 	public function __destruct() {
-		if ($this->dump_fp != null){
-			for ($a = 0.0;$a <= 1.0;$a+=0.1){
-				$index = sprintf("%.1lf", $a); // if use double as the array index, it will get an error 
-				fclose($this->dump_fp[$index]);
-			}
-		}
 		for ($a = 0.0;$a <= 1.0;$a+=0.1){
 			$index = sprintf("%.1lf", $a); // if use double as the array index, it will get an error 
 			fclose($this->output_a[$index]);
@@ -159,7 +144,7 @@ class aol_rerank extends aol_utility {
 		fclose($this->traffic_fp);
 	}
 
-	private function query_newrank($q){
+	public function query_newrank($q){
 		$this->sense_score[$q] = array();
 		$this->sense_rank[$q] = array();
 
@@ -219,36 +204,6 @@ class aol_rerank extends aol_utility {
 		//print_r($this->merge_rank[$q]);
 	}
 	
-	public function dump_score($q){
-		if ($this->dump_fp == NULL){
-			return false;
-		}
-		for ($a = 0.0; $a<= 1.0;$a+=0.1 ){
-			$index = sprintf("%.1lf", $a);
-			foreach ($this->merge_score[$index] as $q => $ranking){
-				//$counter=0;
-				foreach ($ranking as $u => $score){
-					fprintf($this->dump_fp[$index], "%s\t%s\t%lf\t", $q, $u, $score);
-					$r_s = $this->sense_rank[$q][$u];
-					$r = $this->itemrank[$q][$u];
-					fprintf($this->dump_fp[$index], "= %lf / (itemrank)%d + %lf / (sense rank)%d\t",
-						1-$a, $r, $a, $r_s);
-					
-					fprintf($this->dump_fp[$index], "sense_score = %lf = sum[", 
-						$this->sense_score[$q][$u]);
-					foreach ($this->traffic as $sense => $v){
-						if ( isset($this->sim[$u][$sense]) ){
-							fprintf($this->dump_fp[$index], "(%s)%lf * %lf + ", 
-								$sense,$this->sim[$u][$sense],$v);
-						}
-					}
-					fprintf($this->dump_fp[$index], "\n");
-					
-				}
-			}
-		}
-		return true;
-	}
 	public static function AolRerank($argc, $argv){
 		// sample command
 		// php aol_rerank.php -itemrank rerank_input.txt -sense_traffic traffic.txt -similarity sim.txt -o rerank3
@@ -265,11 +220,78 @@ class aol_rerank extends aol_utility {
 				foreach ($ranking as $u => $score){
 					fprintf($obj->output_a[$index], "%s\t%s\t%lf\n", $q, $u, $score);
 				}
-				$obj->dump_score($q);
+				//$obj->dump_score($q);
 			}
 		}
-		//print_r($obj->merge_rank);
 	}
 }
-aol_rerank::AolRerank($argc,$argv);
+
+
+class aol_rerank_with_top_sense extends aol_rerank{
+	// it computes the new rank with N senses those are most similar to the target url
+	
+	// sample command
+	// php aol_rerank_dump.php -itemrank Itemrank.txt 
+	// -sense_traffic data_txt/sense_traffic.txt -similarity data_txt/similarity.txt 
+	// -o rerank3 -dump rerankdump 
+	public $NSense;
+	public function __construct($para){
+		if ( isset($para["NSense"]) ){
+			$this->NSense = intval($para["NSense"]);
+		}else {
+			fprintf(STDERR, "please specify the NSense parameter with option -NSense\n");
+			exit(-1);
+		}
+		parent::__construct($para);
+	}
+	public function query_newrank($q){
+		$this->sense_score[$q] = array();
+		$this->sense_rank[$q] = array();
+		
+		// compute new rank
+		foreach ($this->itemrank[$q] as $u => $r){
+			$sum = 0.0;
+			$counter = 0;
+			if (!isset($this->sim[$u])){
+				//skip the url the we haven't crawl the ram content
+				continue;
+			}
+			arsort($this->sim[$u]);
+			foreach ($this->sim[$u] as $sense => $v){
+				if ($counter >= $this->NSense){
+					break;
+				}
+				if ( isset($this->traffic[$sense]) ){
+					$sum+= $v * $this->traffic[$sense];
+					$counter++;
+				}
+			}
+			$this->sense_score[$q][$u] = $sum;
+
+		}
+		arsort($this->sense_score[$q]);
+		$rank = 1;
+		foreach ($this->sense_score[$q] as $u => $v){
+			$this->sense_rank[$q][$u] = $rank;
+			$rank++;
+		}
+	}
+	public static function AolRerank($argc, $argv){
+		$para = ParameterParser($argc, $argv);
+		$obj = new aol_rerank_with_top_sense($para);
+		$querys = array_keys($obj->itemrank);
+		foreach ($querys as $q){
+			$obj->query_rerank($q);
+		}
+
+		for ($a = 0.0; $a<= 1.0;$a+=0.1 ){
+			$index = sprintf("%.1lf", $a);
+			foreach ($obj->merge_score[$index] as $q => $ranking){
+				foreach ($ranking as $u => $score){
+					fprintf($obj->output_a[$index], "%s\t%s\t%lf\n", $q, $u, $score);
+				}
+			}
+		}
+	}
+}
 ?>

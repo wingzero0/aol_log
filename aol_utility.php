@@ -45,7 +45,10 @@ class aol_utility {
 		$r_str = preg_replace("/\n$/", "", $str);
 		return $r_str;
 	}
-	
+	public function split_tab($str){
+		$r_array = preg_split("/\t/", $str);
+		return $r_array;
+	}
 }
 
 ?>

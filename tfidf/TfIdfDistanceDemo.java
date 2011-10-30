@@ -8,9 +8,7 @@ import java.util.Map;
 
 
 public class TfIdfDistanceDemo {
-
-
-	public static void main(String[] args) {
+	public static void SenseSimilarity(String[] args){
 		SenseTrainerTfidf train = new SenseTrainerTfidf();
 
 		Map<String, String> para = kit_lib.ParameterParser(args);
@@ -42,16 +40,6 @@ public class TfIdfDistanceDemo {
 			}
 		}
 		train.StartTraining();
-		/*
-		for (int i= 0; i < counter;i++){
-			String content = train.CreateBigStr(i);
-			//System.out.println(content);
-			train.Train(content);
-		}
-		for (int i= 0; i < counter;i++){
-			String content = train.CreateBigStr(i);
-			System.out.println(train.Sim(content, "php doc"));
-		}*/
 		
 		File testDir = new File(para.get("test"));
 		if (!testDir.isDirectory()) {
@@ -62,34 +50,6 @@ public class TfIdfDistanceDemo {
 		}
 		
 		try {
-			/*
-			FileOutputStream newOut = new FileOutputStream(para.get("o"));
-			String[] senseName = train.getAllSenseName();
-
-			// output preprocessing
-			String output;
-			for (int j = 0; j< senseName.length;j++){
-				output = senseName[j] + "\t";
-				newOut.write(output.getBytes());
-			}
-
-			String[] testClassDir = testDir.list();
-			double[] simScore;
-			for (int i = 0; i < testClassDir.length; ++i) {
-				File html = new File(testDir, testClassDir[i]);
-				if (html.isFile()) {
-					simScore = train.TestWithAllSense(html.getAbsolutePath());
-					for (int j = 0; j< simScore.length;j++){
-						String output = train.getSenseName(j) + ":" + testClassDir[i].toString() + "\t" + simScore[j] + "\n";
-						System.out.println(output);
-						newOut.write(output.getBytes());
-
-					}
-				}
-			}
-			newOut.close();
-			*/
-
 			File outfile = new File(para.get("o"));
 			BufferedWriter outwri = null;
 			try {
@@ -136,5 +96,41 @@ public class TfIdfDistanceDemo {
 			e.printStackTrace();
 		} 
 		return;
+	}
+	
+	public static void SenseSelfTest(String[] args){
+		SenseTrainerTfidf train = new SenseTrainerTfidf();
+
+		Map<String, String> para = kit_lib.ParameterParser(args);
+
+		if (!para.containsKey("model")){
+			para.put("model", "train_data/");
+		}
+		File dataDir = new File(para.get("model"));
+		if (!dataDir.isDirectory()) {
+			String msg = "-model is not a path:" + dataDir;
+			System.out.println(msg); // in case exception gets lost in
+			// shell
+			return;
+		}
+
+		// train
+		String[] trainingClassDir = dataDir.list();
+		int counter = 0;
+		for (int i = 0; i < trainingClassDir.length; ++i) {
+			File classDir = new File(dataDir, trainingClassDir[i]);
+			if (classDir.isDirectory()) {
+				train.AddCorpusPath(classDir.getAbsolutePath());
+				counter++;
+			}
+		}
+		train.StartTraining();
+		// self test
+		double p = train.SelfTest();
+		System.out.println("SelfTest precision:"+p);
+	}
+	public static void main(String[] args) {
+		//SenseSimilarity(args);
+		SenseSelfTest(args);
 	}
 }

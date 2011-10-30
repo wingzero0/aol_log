@@ -48,6 +48,61 @@ public class SenseTrainerTfidf {
 		}
 		return simScore;
 	}
+	public double SelfTest(){
+		int total = 0;
+		int right = 0;
+		for (int i= 0; i < this.corpus_path.size();i++){
+			File classDir = new File(this.corpus_path.get(i));
+			if (!classDir.isDirectory()) {
+				String msg = "Could not find training directory=" + classDir;
+				System.out.println(msg); // in case exception gets lost in
+											// shell
+				continue;
+			}
+			
+			String[] trainingFiles = classDir.list();
+			int max_file = 1000;
+			int test_file = 100;
+			if (max_file + test_file > trainingFiles.length){
+				String msg = "not enought test doc:" + classDir;
+				System.out.println(msg);
+				msg = "num of doc:"+ trainingFiles.length;
+				System.out.println(msg);
+				continue;
+			}
+			double sim[];
+			for (int j = max_file; j < max_file + test_file; ++j) {
+				File file = new File(classDir, trainingFiles[j]);
+				// Here, we can speed up a little bit by reading the file directly.
+				// But now, I just reuse the TestWithAllSense function.
+				sim = this.TestWithAllSense(file.getAbsolutePath());
+				total +=1;
+				if (this.RightClassify(i, sim) == true){
+					right +=0;
+				}
+			}
+		}
+		if (total == 0){
+			return -1; // no testing result
+		}
+		double p = (double) right / (double) total ; // precision
+		return p;
+	}
+	public boolean RightClassify(int corpus_i, double simScore[]){
+		double maxValue = 0.0;
+		int maxIndex = -1;
+		for (int i = 0; i < simScore.length;i++){
+			if (simScore[i] > maxValue){
+				maxIndex = i;
+				maxValue = simScore[i];
+			}
+		}
+		if (maxIndex == corpus_i){
+			return true;
+		}else{
+			return false;
+		}
+	}
 	public int StartTraining(){
 		for (int i= 0; i < this.corpus_path.size();i++){
 			String sense = this.CreateBigStr(i);
@@ -79,7 +134,7 @@ public class SenseTrainerTfidf {
 		}
 		
 		String[] trainingFiles = classDir.list();
-		int max_file = 100;
+		int max_file = 1000;
 		if (max_file > trainingFiles.length){
 			max_file = trainingFiles.length;
 		}

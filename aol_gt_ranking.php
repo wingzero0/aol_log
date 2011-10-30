@@ -33,9 +33,9 @@ class aol_gt_ranking extends ranking{
 	}
 	public function HourGTRanking($s_q, $s_urls, $t){
 		$rank[$s_q] = array();
-		foreach ($s_urls as $s_u){
+		foreach ($s_urls as $s_u){// need to fix the targetTB
 			$sql = sprintf(
-				"select `%d` from `%s.rank` 
+				"select `%d` from `%s.p.rank` 
 				where `query` = '%s' and `url` = '%s'",
 				$t, $this->targetTB,$s_q, $s_u);
 			$result = $this->mysql_query_error_output($sql);

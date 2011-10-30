@@ -14,11 +14,13 @@ mysql_select_db($database_cnn,$b95119_cnn);
 
 class RankEntropy extends Statistics{
 	public $topk = 10;
+	protected $newTB; // new table name;
 	public function __construct($para){
 		if (isset($para["topk"])){
 			$this->topk = intval($para["topk"]);
 		}
 		parent::__construct($para);
+		$this->newTB = $this->DB.".rank";
 	}
 	public function select_candidate_urls($q){
 		$sql = sprintf("select * from `%s` where `query` = '%s'", 
@@ -103,9 +105,9 @@ class RankEntropy extends Statistics{
 		return $u_inverted;
 	}
 	
-	private function insertRank($query, $url, $t_rank) {
+	protected function insertRank($query, $url, $t_rank) {
 		$sql = sprintf("
-			insert into `%s.rank` 
+			insert into `%s` 
 			(
 				`query`, `url`, 
 				`0`,
@@ -158,7 +160,7 @@ class RankEntropy extends Statistics{
 				%d,
 				%d,
 				%d	
-			)", $this->DB,
+			)", $this->newTB,
 			$query, $url, 
 			$t_rank[0],
 			$t_rank[1],
@@ -191,7 +193,7 @@ class RankEntropy extends Statistics{
 	
 	public function CreateDBTable() {
 		$sql = sprintf("
-			CREATE  TABLE IF NOT EXISTS `%s.rank` (
+			CREATE  TABLE IF NOT EXISTS `%s` (
 				`id` int( 11  )  NOT  NULL  AUTO_INCREMENT ,
 				`query` varchar( 128  )  COLLATE utf8_unicode_ci NOT  NULL ,
 				`url` varchar( 255  )  COLLATE utf8_unicode_ci NOT  NULL ,
@@ -222,7 +224,7 @@ class RankEntropy extends Statistics{
 				PRIMARY  KEY (  `id`  ) ,
 				KEY  `Query` (  `query`  ) ,
 				KEY  `Url` (  `url`  )  ) ENGINE  =  MyISAM  DEFAULT CHARSET  = utf8 COLLATE  = utf8_unicode_ci;
-		", $this->DB);
+		", $this->newTB);
 		$result = mysql_query($sql) or die(mysql_error()."\nerror query\n".$sql);
 		//echo $sql;
 		$sql = sprintf("TRUNCATE TABLE `%s.rank`",$this->DB);
@@ -230,7 +232,7 @@ class RankEntropy extends Statistics{
 		
 		return;
 	}	
-	private function select_time_click($t,$q,$u){
+	protected function select_time_click($t,$q,$u){
 		$sql = sprintf("
 			select `%d` from `%s` 
 			where `query` = '%s' and `url` = '%s'", 
@@ -245,8 +247,8 @@ class RankEntropy extends Statistics{
 	}
 	
 	public function getEntropy($q){
-		$sql = sprintf("select * from `%s.rank` where `query` = '%s'", 
-			$this->DB, $q);
+		$sql = sprintf("select * from `%s` where `query` = '%s'", 
+			$this->newTB, $q);
 		$result = mysql_query($sql) or die(mysql_error()."\nerror query\n".$sql);
 		$num = mysql_num_rows($result);
 		$urls = array();
@@ -365,5 +367,5 @@ class RankEntropy extends Statistics{
 	} 
 }
 
-RankEntropy::TopK($argc, $argv);
+//RankEntropy::TopK($argc, $argv);
 ?>

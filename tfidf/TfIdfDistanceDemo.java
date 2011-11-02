@@ -99,7 +99,7 @@ public class TfIdfDistanceDemo {
 	}
 	
 	public static void SenseSelfTest(String[] args){
-		SenseTrainerTfidf train = new SenseTrainerTfidf();
+		SenseTrainerTfidf train = new SenseTrainerTfidf(500, 100);
 
 		Map<String, String> para = kit_lib.ParameterParser(args);
 
@@ -130,7 +130,7 @@ public class TfIdfDistanceDemo {
 		System.out.println("SelfTest precision:"+p);
 	}
 	public static void main(String[] args) {
-		//SenseSimilarity(args);
-		SenseSelfTest(args);
+		SenseSimilarity(args);
+		//SenseSelfTest(args);
 	}
 }

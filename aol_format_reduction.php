@@ -100,7 +100,7 @@ class traffic_csv_to_rerank extends aol_format_reduction {
 			if (empty($line)){
 				continue;
 			}
-			$list = preg_split("/ |\n/", $line);
+			$list = preg_split("/ |\t|\n/", $line);
 			$pattern = "/\"class(.*)\"/";
 
 			$sense = preg_replace($pattern, "\${1}_parsed", $list[0]);
@@ -304,6 +304,7 @@ class ranking_to_csv_display extends aol_format_reduction {
 		//-gt1 ground_truth/gt_ranking.19 -gt2 ground_truth/gt_ranking.20
 		//-itemrank data_txt/Itemrank.txt 
 		//-dumpscore dumpWithSort/dumpSortWithTopSense.0.5.txt
+		//-RA data_txt/RA.txt
 		$this->readinput();
 		$this->writeoutput();
 	}
@@ -335,7 +336,7 @@ class ranking_to_csv_display extends aol_format_reduction {
 }
 $para = ParameterParser($argc, $argv);
 //$obj = new aol_tf_to_rerank($para);
-//$obj = new traffic_csv_to_rerank($para);
-$obj = new ranking_to_csv_display($para);
+$obj = new traffic_csv_to_rerank($para);
+//$obj = new ranking_to_csv_display($para);
 $obj->Reduction();
 ?>

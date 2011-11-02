@@ -40,7 +40,10 @@ class PercentageRankEntropy extends RankEntropy{
 			for($i = 1; $i < count($click_n); $i++){
 				$num +=1;
 				$diff = $click_n[$i - 1] - $click_n[$i];
-				if ($diff > $click_n[$i - 1] * 0.1 ){ // if difference is bigger than the 10% of the higher click
+				if ( ($diff > $click_n[$i - 1] * 0.1) ){
+				//if ( ($diff > $click_n[$i - 1] * 0.1) && ($click_n[$i -1] > 10)){ 
+					// if difference is bigger than the 10% of the higher click
+					// and the click num is bigger than 10
 					$rank_value = $num; // $num will always increase in each loop, but the rank_value may not.
 				}
 				// url assign to rank

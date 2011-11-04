@@ -10,6 +10,8 @@ class aol_sense_distribution extends aol_utility {
 	protected $dh; //dir source
 	protected $dirName; // dir name
 	public $dis; // distribution
+	public $sum;
+	public $entropy;
 	public function __construct($para){ 
 		if ( isset($para["input_dir"]) && is_dir($para["input_dir"]) ){
 			$this->dh = opendir($para["input_dir"]);
@@ -33,7 +35,58 @@ class aol_sense_distribution extends aol_utility {
 			}
 		}
 		ksort($this->dis);
-		print_r($this->dis);
+		//print_r($this->dis);
+	}
+	public function FindAllMajority(){
+		$this->ReadDir();
+		foreach ($this->dis as $senseNum => $URLs){
+			$entropy = $this->Entropy($senseNum);
+		}
+		//asort($this->entropy);
+		foreach($this->dis as $senseNum => $URLs){
+			foreach ($URLs as $URL => $v){
+				$per = (double) $v / (double) $this->sum[$senseNum];
+				if ($per >= 0.3){
+					//$this->Output($senseNum, $URL, $v);
+					fprintf($this->output_fp, "%d\t%s\t%d\t%d\n", $senseNum, $URL, $v, $this->sum[$senseNum]);
+					//break;
+				}else{
+					fprintf($this->output_fp, "%d\t%d\tentropy:%lf\n", $senseNum, $this->sum[$senseNum], $this->entropy[$senseNum]);
+					break;
+				}
+			} 
+		}
+		print_r($this->dis[33]);
+		print_r($this->entropy[33]."\n");
+		print_r($this->dis[52]);
+		print_r($this->entropy[52]."\n");
+	}
+	public function Output($senseNum, $URL, $v) {
+		//$counter = 0;
+		//foreach ($this->dis[$senseNum] as $URL => $v){
+			//if ($counter > $numOutput){
+				//break;
+			//}
+			fprintf($this->output_fp, "%d\t%s\t%d\t%d\n", $senseNum, $URL, $v, $this->sum[$senseNum]);
+			//$counter++;
+		//}
+	}
+	public function Entropy($senseNum){
+		// calulate entropy
+		arsort($this->dis[$senseNum]);
+		$sum = 0;
+		foreach($this->dis[$senseNum] as $URL => $v){
+			$sum += $v;
+		}
+		$this->sum[$senseNum] = $sum;
+		$this->entropy[$senseNum] = 0.0;
+		foreach($this->dis[$senseNum] as $URL => $v){
+			if ($v > 0){
+				$p = (double) $v / (double) $sum;
+				$this->entropy[$senseNum] -= $p * log10($p);
+			}
+		}
+		return $this->entropy[$senseNum];
 	}
 	public function AddRecord($filename){
 		$fp = fopen($filename, "r");
@@ -77,5 +130,5 @@ class aol_sense_distribution extends aol_utility {
 }
 $para = ParameterParser($argc, $argv);
 $obj = new aol_sense_distribution($para);
-$obj->ReadDir();
+$obj->FindAllMajority();
 ?>

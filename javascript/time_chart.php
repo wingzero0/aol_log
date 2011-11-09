@@ -6,15 +6,19 @@ mysql_select_db($database_cnn,$b95119_cnn);
 function get_row(){
 	$ret = array();
 	$sql = "select * from `aol_24_clean` where 1";
-	if ( isset($_POST["query"]) && !empty($_POST["query"])){
-		$sql = sprintf("%s and `query` = '%s'", $sql, $_POST["query"]);
-	}
-	
-	if ( isset($_POST["url"]) && !empty($_POST["url"])){
-		$sql = sprintf("%s and `url` = '%s'", $sql, $_POST["url"]);
-	}
-	if ( isset($_POST["sp"]) && !empty($_POST["sp"])){
-		$sql = sprintf("%s and %s", $sql, $_POST["sp"]);
+	if ( isset($_POST["sql"]) && !empty($_POST["sql"])){
+		$sql = $_POST["sql"];
+	}else{
+		if ( isset($_POST["query"]) && !empty($_POST["query"])){
+			$sql = sprintf("%s and `query` = '%s'", $sql, $_POST["query"]);
+		}
+		
+		if ( isset($_POST["url"]) && !empty($_POST["url"])){
+			$sql = sprintf("%s and `url` = '%s'", $sql, $_POST["url"]);
+		}
+		if ( isset($_POST["sp"]) && !empty($_POST["sp"])){
+			$sql = sprintf("%s and %s", $sql, $_POST["sp"]);
+		}
 	}
 	$result = mysql_query($sql) or die($sql."<br>".mysql_error() );
 	echo $sql;
@@ -61,7 +65,7 @@ $rows = get_row();
 						marginBottom: 25
 					},
 					title: {
-						text: 'query = <?php echo $rows[1][1];?>',
+						text: 'query = <?php echo $rows[0][1];?>',
 						x: -20 //center
 					},
 					subtitle: {
@@ -107,7 +111,7 @@ $rows = get_row();
 							foreach ($rows as $row){
 						?>
 						{
-						name: '<?php echo $row[2]; ?>',
+						name: '<?php echo $row[1]." ".$row[2]; ?>',
 						data: [
 							<?php 
 								for ($i = 0;$i<=22;$i++){

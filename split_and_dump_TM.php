@@ -1,6 +1,9 @@
 <?php
-/* this program will cp the records of some specify region 
- * from ttt table of trendmicro log
+/* This program will cp the records of some specify region 
+ * from ttt table of trendmicro log.
+ * It also can dump the record after copying.
+ * The record will contain the complete url form by 
+ * referencing to the tm_url_path of the input.
  */  
 include_once("kit_lib.php");
 $database_cnn = "TrendMirco";
